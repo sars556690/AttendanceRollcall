@@ -52,9 +52,13 @@ class EmployeeCard:
                 if(EmployeeCode != None):
                     sql +=" and "
                 sql += "AttendanceEmpRank.Date = '"+ str(date) +"'"
-    
+
             self.cursor.execute(sql)
-            return len(self.cursor.fetchall()) > 0
+            employee = self.cursor.fetchall()
+            if(len(employee)>0):
+                return employee[0][1] != "DefaultHolidayType001"
+            else:
+                return False
 
 
 # a=EmployeeCard()
