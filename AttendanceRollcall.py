@@ -158,10 +158,14 @@ class Windows:
     def processIgnore(self ,recoad):
         Employee = self.EmployeeCard.searchEmployee(CardNo = recoad[14:24])
         Record = recoad[0:4] + '-' + \
-        		 recoad[4:6] + '-' + recoad[6:8] + '  ' + \
-        		 recoad[8:10] + ':' + recoad[10:12] + '  ' + \
-        		 recoad[14:24] + '  ' + Employee[0][0].encode("utf-8") + '  ' + \
-        		 Employee[0][1].encode("utf-8") + '\n'
+                 recoad[4:6] + '-' + recoad[6:8] + '  ' + \
+                 recoad[8:10] + ':' + recoad[10:12] + '  ' + \
+                 recoad[14:24] + '  ' 
+        if(Employee):
+            Record += Employee[0][0].encode("utf-8") + '  ' + \
+                      Employee[0][1].encode("utf-8") + '\n'
+        else:
+            Record += "查無此人" + '\n' 
         return Record
 
     def getTodayString(self):
