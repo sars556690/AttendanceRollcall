@@ -98,26 +98,26 @@ class Windows:
                         # 是否為假日
                         isNotHoliday = self.EmployeeCard.searchEmployeeHoliday( CardNo = fileRow[14:24] ,date = recoadDate )
                         if(isNotHoliday == 2 ):
-                            self.IgnoreRecoad.append([fileRow , isNotHoliday])
-                        elif(not isNotHoliday):
+                            self.IgnoreRecoad.append([fileRow , 2])
+                        elif(isNotHoliday == 0):
                             # 是否 18點 前下班
                             if(recoadTime < time1800):
                                 self.Recoad.append(fileRow)
                                 PassCount+=1 
                             else:
-                                self.IgnoreRecoad.append([fileRow , isNotHoliday])
+                                self.IgnoreRecoad.append([fileRow , 0])
                          # 是否 21：55 前下班
                         elif (recoadTime < time2155):
                             self.Recoad.append(fileRow)
                             PassCount+=1 
                         else:
-                            self.IgnoreRecoad.append([fileRow , isNotHoliday])
+                            self.IgnoreRecoad.append([fileRow , 1])
                     # 主管
                     elif(fileRow[14:24] in self.IgnoreCard):
                         isNotHoliday = self.EmployeeCard.searchEmployeeHoliday( CardNo = fileRow[14:24] ,date = recoadDate )
                         if(isNotHoliday == 2 ):
-                            self.IgnoreRecoad.append([fileRow , isNotHoliday])
-                        elif(not isNotHoliday):
+                            self.IgnoreRecoad.append([fileRow , 2])
+                        elif(isNotHoliday == 0):
                             # 是否在 7:30 及 18點 打卡
                             if(recoadTime>time0700 and recoadTime < time1800):
                                 self.Recoad.append(fileRow)
