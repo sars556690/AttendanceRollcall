@@ -16,7 +16,7 @@ class Windows:
         self.SchedulingCard=[]      # 排班人員卡號
         self.Recoad = []            # 已處理紀錄
         self.IgnoreRecoad = []      # 已處理刪除紀錄
-
+        self.IgnoreMsg = ["假日超時" ,"平日超時" ,"主管超時"]
         # 搜尋員工卡號
         self.EmployeeCard = EmployeeCard.EmployeeCard()
         
@@ -102,13 +102,13 @@ class Windows:
                                 self.Recoad.append(fileRow)
                                 PassCount+=1 
                             else:
-                                self.IgnoreRecoad.append(fileRow)
+                                self.IgnoreRecoad.append([fileRow,0])
                          # 是否 21：55 前下班
                         elif (recoadTime < time2155):
                             self.Recoad.append(fileRow)
                             PassCount+=1 
                         else:
-                            self.IgnoreRecoad.append(fileRow)
+                            self.IgnoreRecoad.append([fileRow,1])
                     # 主管
                     elif(fileRow[14:24] in self.IgnoreCard):
                         # 是否在 7:30 及 18點 打卡
@@ -116,7 +116,7 @@ class Windows:
                             self.Recoad.append(fileRow)
                             PassCount+=1 
                         else:
-                            self.IgnoreRecoad.append(fileRow)
+                            self.IgnoreRecoad.append([fileRow,2])
 
             # 被過濾資料比數
             hasRemoved = fileRowCount - PassCount
@@ -141,7 +141,7 @@ class Windows:
                     os.makedirs('Ignore/')
                 file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
                 for IgnoreRecoad in self.IgnoreRecoad:
-                    file.write(self.processIgnore(IgnoreRecoad))
+                    file.write(self.processIgnore(IgnoreRecoad[0]) +"  "+self.IgnoreMsg[IgnoreRecoad[1]]+"\n")
             Label_Msg+="完成，已移去"+str(hasRemoved)+"項紀錄"
         else:
             Label_Msg+='檔案路徑有誤'
@@ -163,9 +163,9 @@ class Windows:
                  recoad[14:24] + '  ' 
         if(Employee):
             Record += Employee[0][0].encode("utf-8") + '  ' + \
-                      Employee[0][1].encode("utf-8") + '\n'
+                      Employee[0][1].encode("utf-8")
         else:
-            Record += "查無此人" + '\n' 
+            Record += "查無此人"
         return Record
 
     def getTodayString(self):
