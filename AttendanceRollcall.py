@@ -17,6 +17,7 @@ class Windows:
         self.SchedulingCard=[]      # 排班人員卡號
         self.Recoad = []            # 已處理紀錄
         self.IgnoreRecoad = []      # 已處理刪除紀錄
+        self.IgnoreRecoad2excel = []# 已處理刪除紀錄(補刷卡)
         self.IgnoreMsg = ["假日超時" ,"平日超時" ,"主管超時"]
         # 搜尋員工卡號
         self.EmployeeCard = EmployeeCard.EmployeeCard()
@@ -92,6 +93,7 @@ class Windows:
         if(self.file_path!="" and os.path.isfile(self.file_path)):
             self.Recoad = []
             self.IgnoreRecoad =[]
+            self.IgnoreRecoad2excel = []
             file = open(self.file_path,'r+')
             
             fileRowCount = len(file.readlines())
@@ -119,12 +121,27 @@ class Windows:
                                 PassCount+=1 
                             else:
                                 self.IgnoreRecoad.append([fileRow,0])
+                                # 剔除當天重複人員打卡資料
+                                count = 0
+                                for d in self.IgnoreRecoad2excel:
+                                    if(d[0][14:24] == fileRow[14:24] and d[0][0:8] == fileRow[0:8]):
+                                        count=1
+                                if(count==0):
+                                    self.IgnoreRecoad2excel.append([fileRow,0])
+                                        
                          # 是否 21：55 前下班
                         elif (recoadTime < time2155):
                             self.Recoad.append(fileRow)
                             PassCount+=1 
                         else:
                             self.IgnoreRecoad.append([fileRow,1])
+                            # 剔除當天重複人員打卡資料
+                            count = 0
+                            for d in self.IgnoreRecoad2excel:
+                                if(d[0][14:24] == fileRow[14:24] and d[0][0:8] == fileRow[0:8]):
+                                    count=1
+                            if(count==0):
+                                self.IgnoreRecoad2excel.append([fileRow,1])
                     # 主管
                     elif(fileRow[14:24] in self.IgnoreCard):
                         # 是否在 7:30 及 18點 打卡
@@ -133,6 +150,14 @@ class Windows:
                             PassCount+=1 
                         else:
                             self.IgnoreRecoad.append([fileRow,2])
+                            # 剔除當天重複人員打卡資料
+                            count = 0
+                            for d in self.IgnoreRecoad2excel:
+                                if(d[0][14:24] == fileRow[14:24] and d[0][0:8] == fileRow[0:8]):
+                                    count=1
+                            if(count==0):
+                                fileRow = fileRow[0:8]+"17"+fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel.append([fileRow,2])
 
             # 被過濾資料比數
             hasRemoved = fileRowCount - PassCount
@@ -164,13 +189,18 @@ class Windows:
                     worksheet.write(Row, 0, u"工號", format)
                     worksheet.write(Row, 1, u"刷卡日期", format)
                     worksheet.write(Row, 2, u"刷卡時間", format)
-                    format = workbook.add_format({"align":"center" ,"num_format": "@"})
-                    for IgnoreRecoad in self.IgnoreRecoad:
-                        IgnoreData = self.processIgnore2xlsx(IgnoreRecoad[0])
+                    
+                    for IgnoreRecoad2excel in self.IgnoreRecoad2excel:
+                        IgnoreData = self.processIgnore2xlsx(IgnoreRecoad2excel[0])
                         Row += 1
+                        if(IgnoreRecoad2excel[1] < 2):
+                            format = workbook.add_format({"align":"center" ,"num_format": "@",'bg_color': 'yellow'})
+                        else:
+                            format = workbook.add_format({"align":"center" ,"num_format": "@"})
                         worksheet.write(Row, 0, IgnoreData[0], format)
                         worksheet.write(Row, 1, IgnoreData[1], format)
                         worksheet.write(Row, 2, IgnoreData[2], format)
+                        
                     workbook.close() 
                 if(self.chkbtn_value_removed_text.get()):
                     file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
