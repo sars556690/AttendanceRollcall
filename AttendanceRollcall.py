@@ -50,9 +50,17 @@ class Windows:
         self.entry_file.grid(row=1, column=1)
 
         # 設定UI checkbox產生已移除紀錄檔案
-        self.chkbtn_value_removed_file = IntVar()
-        self.chkbtn_removed_file=Checkbutton(master , text="是否產生移除的紀錄檔案" , variable=self.chkbtn_value_removed_file)
+        self.chkbtn_value_removed_file = IntVar(value=1)
+        self.chkbtn_removed_file=Checkbutton(master , text="是否產生移除的紀錄檔案" , command = self.chkbtn_command_removed_file , variable=self.chkbtn_value_removed_file)
         self.chkbtn_removed_file.grid(row=2, column=0 ,columnspan=2, sticky=W)
+
+        self.chkbtn_value_removed_excel = IntVar(value=1)
+        self.chkbtn_removed_excel=Checkbutton(master , text="Excel" , variable=self.chkbtn_value_removed_excel)
+        self.chkbtn_removed_excel.grid(row=3, column=0)
+
+        self.chkbtn_value_removed_text = IntVar(value=0)
+        self.chkbtn_removed_text=Checkbutton(master , text="Text" , variable=self.chkbtn_value_removed_text)
+        self.chkbtn_removed_text.grid(row=3, column=1)
 
         # 設定UI 處理紀錄按鈕
         self.btn_Change= Button(master, text="完成" ,command=self.change_date)
@@ -62,6 +70,13 @@ class Windows:
         self.btn_Browse= Button(master, text="瀏覽", command=self.browse)
         self.btn_Browse.grid(row=1, column=3)
 
+    def chkbtn_command_removed_file(self):
+        if(self.chkbtn_value_removed_file.get()):
+            self.chkbtn_removed_excel['state'] = 'normal'
+            self.chkbtn_removed_text['state'] = 'normal'
+        else:
+            self.chkbtn_removed_excel['state'] = 'disabled'
+            self.chkbtn_removed_text['state'] = 'disabled'
     def browse(self):
         # 瀏覽檔案
         opts = {}
@@ -140,27 +155,27 @@ class Windows:
             if(self.chkbtn_value_removed_file.get()):
                 if(not os.path.isdir('Ignore/')):
                     os.makedirs('Ignore/')
-
-                workbook = xlsxwriter.Workbook('Ignore/'+ new_file_name + '_Ignore' + '.xlsx')
-                worksheet = workbook.add_worksheet()
-                worksheet.set_column(0,2, 20)
-                format = workbook.add_format({'font_color': 'red',"align":"center" ,"num_format": "@"})
-                Row = 0
-                worksheet.write(Row, 0, u"工號", format)
-                worksheet.write(Row, 1, u"刷卡日期", format)
-                worksheet.write(Row, 2, u"刷卡時間", format)
-                format = workbook.add_format({"align":"center" ,"num_format": "@"})
-                for IgnoreRecoad in self.IgnoreRecoad:
-                	IgnoreData = self.processIgnore2xlsx(IgnoreRecoad[0])
-                	Row += 1
-                	worksheet.write(Row, 0, IgnoreData[0], format)
-                	worksheet.write(Row, 1, IgnoreData[1], format)
-               		worksheet.write(Row, 2, IgnoreData[2], format)
-                workbook.close() 
-
-                file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
-                for IgnoreRecoad in self.IgnoreRecoad:
-                    file.write(self.processIgnore(IgnoreRecoad[0]) +"  "+self.IgnoreMsg[IgnoreRecoad[1]]+"\n")
+                if(self.chkbtn_value_removed_excel.get()):
+                    workbook = xlsxwriter.Workbook('Ignore/'+ new_file_name + '_Ignore' + '.xlsx')
+                    worksheet = workbook.add_worksheet()
+                    worksheet.set_column(0,2, 20)
+                    format = workbook.add_format({'font_color': 'red',"align":"center" ,"num_format": "@"})
+                    Row = 0
+                    worksheet.write(Row, 0, u"工號", format)
+                    worksheet.write(Row, 1, u"刷卡日期", format)
+                    worksheet.write(Row, 2, u"刷卡時間", format)
+                    format = workbook.add_format({"align":"center" ,"num_format": "@"})
+                    for IgnoreRecoad in self.IgnoreRecoad:
+                        IgnoreData = self.processIgnore2xlsx(IgnoreRecoad[0])
+                        Row += 1
+                        worksheet.write(Row, 0, IgnoreData[0], format)
+                        worksheet.write(Row, 1, IgnoreData[1], format)
+                        worksheet.write(Row, 2, IgnoreData[2], format)
+                    workbook.close() 
+                if(self.chkbtn_value_removed_text.get()):
+                    file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
+                    for IgnoreRecoad in self.IgnoreRecoad:
+                        file.write(self.processIgnore(IgnoreRecoad[0]) +"  "+self.IgnoreMsg[IgnoreRecoad[1]]+"\n")
             Label_Msg+="完成，已移去"+str(hasRemoved)+"項紀錄"
         else:
             Label_Msg+='檔案路徑有誤'
