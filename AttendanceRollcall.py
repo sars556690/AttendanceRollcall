@@ -6,6 +6,7 @@ import ConfigParser
 import codecs 
 import datetime
 import EmployeeCard
+import xlsxwriter
  # 2017093011401400000000140101
 
 class Windows:
@@ -139,6 +140,24 @@ class Windows:
             if(self.chkbtn_value_removed_file.get()):
                 if(not os.path.isdir('Ignore/')):
                     os.makedirs('Ignore/')
+
+                workbook = xlsxwriter.Workbook('Ignore/'+ new_file_name + '_Ignore' + '.xlsx')
+                worksheet = workbook.add_worksheet()
+                worksheet.set_column(0,2, 20)
+                format = workbook.add_format({'font_color': 'red',"align":"center" ,"num_format": "@"})
+                Row = 0
+                worksheet.write(Row, 0, u"工號", format)
+                worksheet.write(Row, 1, u"刷卡日期", format)
+                worksheet.write(Row, 2, u"刷卡時間", format)
+                format = workbook.add_format({"align":"center" ,"num_format": "@"})
+                for IgnoreRecoad in self.IgnoreRecoad:
+                	IgnoreData = self.processIgnore2xlsx(IgnoreRecoad[0])
+                	Row += 1
+                	worksheet.write(Row, 0, IgnoreData[0], format)
+                	worksheet.write(Row, 1, IgnoreData[1], format)
+               		worksheet.write(Row, 2, IgnoreData[2], format)
+                workbook.close() 
+
                 file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
                 for IgnoreRecoad in self.IgnoreRecoad:
                     file.write(self.processIgnore(IgnoreRecoad[0]) +"  "+self.IgnoreMsg[IgnoreRecoad[1]]+"\n")
@@ -166,6 +185,20 @@ class Windows:
                       Employee[0][1].encode("utf-8")
         else:
             Record += "查無此人"
+        return Record
+
+    def processIgnore2xlsx(self ,recoad):
+        Employee = self.EmployeeCard.searchEmployee(CardNo = recoad[14:24])
+
+        EmployeeId = u"查無此人 " + recoad[14:24]
+        if(Employee):
+            EmployeeId = Employee[0][0].encode("utf-8")
+            
+        RecoadDate = recoad[0:4] + '-' + recoad[4:6] + '-' + recoad[6:8]
+        RecoadTime = recoad[8:10] + ':' + recoad[10:12]
+        
+        Record = [EmployeeId , RecoadDate ,  RecoadTime]
+
         return Record
 
     def getTodayString(self):
