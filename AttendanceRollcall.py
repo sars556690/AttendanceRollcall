@@ -151,14 +151,14 @@ class Windows:
                 # 是否為假日
                 if(recoadDate.tm_wday >= 5 ):
                     # 是否 18點 前下班
-                    if(recoadTime < self.time1800):
+                    if(recoadTime <= self.time1800):
                         self.Recoad.append(fileRow)
                         PassCount+=1 
                     else:
                         self.IgnoreRecoad.append([fileRow,0])
                         self.addintoIgnoreRecord(False ,recoadTime,fileRow ,0)
                  # 是否 21：55 前下班
-                elif (recoadTime < self.time2155):
+                elif (recoadTime <= self.time2155):
                     self.Recoad.append(fileRow)
                     PassCount+=1 
                 else:
