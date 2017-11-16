@@ -10,7 +10,11 @@ import xlsxwriter
  # 2017093011401400000000140101
 
 class Windows:
+
     def __init__(self, master):   
+        self.time0700 = self.getTime(7,0)
+        self.time1800 = self.getTime(18,00)
+        self.time2155 = self.getTime(21,55)
         self.file_path=""           # 瀏覽檔案路徑
         self.save_path=""           # 儲存檔案路徑
         self.IgnoreCard=[]          # 主管卡號
@@ -18,10 +22,10 @@ class Windows:
         self.Recoad = []            # 已處理紀錄
         self.IgnoreRecoad = []      # 已處理刪除紀錄
         self.IgnoreRecoad2excel = []# 已處理刪除紀錄(補刷卡)
+        self.Label_Msg = ""
         self.IgnoreMsg = ["假日超時" ,"平日超時" ,"主管超時"]
         # 搜尋員工卡號
         self.EmployeeCard = EmployeeCard.EmployeeCard()
-        
         # 設定載入
         config = ConfigParser.ConfigParser()
         config.readfp(codecs.open('config.ini', "r", "utf-8-sig"))
@@ -88,130 +92,162 @@ class Windows:
 
     def change_date(self):
         
-        Label_Msg = ""
         self.file_path = self.entry_file.get()
         if(self.file_path!="" and os.path.isfile(self.file_path)):
             self.Recoad = []
             self.IgnoreRecoad =[]
             self.IgnoreRecoad2excel = []
+            self.Label_Msg = ''
             file = open(self.file_path,'r+')
             
             fileRowCount = len(file.readlines())
             file.seek(0, 0)
             PassCount = 0
             for i in range(0, fileRowCount):
-                fileRow = file.readline()
-                # 若為排班人員則不處理
-                if(fileRow[14:24] in self.SchedulingCard):
-                    self.Recoad.append(fileRow)
-                    PassCount+=1 
-                else:
-                    time0700 = self.getTime(7,0)
-                    time1800 = self.getTime(18,00)
-                    time2155 = self.getTime(21,55)
-                    recoadTime = self.getTime(fileRow[8:10],fileRow[10:12])
-                    recoadDate = self.getDate(fileRow[0:4],fileRow[4:6],fileRow[6:8]).timetuple()
-                    # 不為主管
-                    if(fileRow[14:24] not in self.IgnoreCard):
-                        # 是否為假日
-                        if(recoadDate.tm_wday >= 5 ):
-                            # 是否 18點 前下班
-                            if(recoadTime < time1800):
-                                self.Recoad.append(fileRow)
-                                PassCount+=1 
-                            else:
-                                self.IgnoreRecoad.append([fileRow,0])
-                                # 剔除當天重複人員打卡資料
-                                count = 0
-                                for d in self.IgnoreRecoad2excel:
-                                    if(d[0][14:24] == fileRow[14:24] and d[0][0:8] == fileRow[0:8]):
-                                        count=1
-                                if(count==0):
-                                    self.IgnoreRecoad2excel.append([fileRow,0])
-                                        
-                         # 是否 21：55 前下班
-                        elif (recoadTime < time2155):
-                            self.Recoad.append(fileRow)
-                            PassCount+=1 
-                        else:
-                            self.IgnoreRecoad.append([fileRow,1])
-                            # 剔除當天重複人員打卡資料
-                            count = 0
-                            for d in self.IgnoreRecoad2excel:
-                                if(d[0][14:24] == fileRow[14:24] and d[0][0:8] == fileRow[0:8]):
-                                    count=1
-                            if(count==0):
-                                self.IgnoreRecoad2excel.append([fileRow,1])
-                    # 主管
-                    elif(fileRow[14:24] in self.IgnoreCard):
-                        # 是否在 7:30 及 18點 打卡
-                        if(recoadTime>time0700 and recoadTime < time1800):
-                            self.Recoad.append(fileRow)
-                            PassCount+=1 
-                        else:
-                            self.IgnoreRecoad.append([fileRow,2])
-                            # 剔除當天重複人員打卡資料
-                            count = 0
-                            for d in self.IgnoreRecoad2excel:
-                                if(d[0][14:24] == fileRow[14:24] and d[0][0:8] == fileRow[0:8]):
-                                    count=1
-                            if(count==0):
-                                fileRow = fileRow[0:8]+"17"+fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel.append([fileRow,2])
+                PassCount = self.Rollcall(file , PassCount)
 
             # 被過濾資料比數
             hasRemoved = fileRowCount - PassCount
-            
-            # 儲存檔案
-            new_file_path=os.path.split(self.file_path)
-            new_file_dir=''
-            new_file_name= os.path.splitext(new_file_path[1])[0]
-            if(self.save_path != ""):
-                if(os.path.isdir(self.save_path)):
-                    Label_Msg = ''
-                    new_file_dir = self.save_path+'/'
-                else:
-                    Label_Msg += '儲存路徑有誤\n'
-    
-            file = open(new_file_dir + self.getTodayString() + '.txt','w')
-            for Employee in self.Recoad:
-                file.write(Employee)
-    
+
+            # 儲存點名後的txt檔
+            new_file_name = self.savePorcessedRecord()
+
             if(self.chkbtn_value_removed_file.get()):
                 if(not os.path.isdir('Ignore/')):
                     os.makedirs('Ignore/')
+
                 if(self.chkbtn_value_removed_excel.get()):
-                    workbook = xlsxwriter.Workbook('Ignore/'+ new_file_name + '_Ignore' + '.xlsx')
-                    worksheet = workbook.add_worksheet()
-                    worksheet.set_column(0,2, 20)
-                    format = workbook.add_format({'font_color': 'red',"align":"center" ,"num_format": "@"})
-                    Row = 0
-                    worksheet.write(Row, 0, u"工號", format)
-                    worksheet.write(Row, 1, u"刷卡日期", format)
-                    worksheet.write(Row, 2, u"刷卡時間", format)
-                    
-                    for IgnoreRecoad2excel in self.IgnoreRecoad2excel:
-                        IgnoreData = self.processIgnore2xlsx(IgnoreRecoad2excel[0])
-                        Row += 1
-                        if(IgnoreRecoad2excel[1] < 2):
-                            format = workbook.add_format({"align":"center" ,"num_format": "@",'bg_color': 'yellow'})
-                        else:
-                            format = workbook.add_format({"align":"center" ,"num_format": "@"})
-                        worksheet.write(Row, 0, IgnoreData[0], format)
-                        worksheet.write(Row, 1, IgnoreData[1], format)
-                        worksheet.write(Row, 2, IgnoreData[2], format)
-                        
-                    workbook.close() 
+                    # 儲存過濾後txt檔
+                    self.saveIgnoreRecord2xlsx(new_file_name)
+
                 if(self.chkbtn_value_removed_text.get()):
-                    file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
-                    for IgnoreRecoad in self.IgnoreRecoad:
-                        file.write(self.processIgnore(IgnoreRecoad[0]) +"  "+self.IgnoreMsg[IgnoreRecoad[1]]+"\n")
-            Label_Msg+="完成，已移去"+str(hasRemoved)+"項紀錄"
+                    # 儲存過濾後excel檔
+                    self.saveIgnoreRecord(new_file_name)
+
+            self.Label_Msg+="完成，已移去"+str(hasRemoved)+"項紀錄"
         else:
-            Label_Msg+='檔案路徑有誤'
+            self.Label_Msg+='檔案路徑有誤'
 
         # 顯示處理訊息
-        self.var.set(Label_Msg)
+        self.var.set(self.Label_Msg)
+        
+    # 點名處理
+    def Rollcall(self,file , PassCount):
+        fileRow = file.readline()
+        # 若為空白則不處理
+        if(fileRow.lstrip()==""):
+            return PassCount
+        # 若為排班人員則不處理
+        if(fileRow[14:24] in self.SchedulingCard):
+            self.Recoad.append(fileRow)
+            PassCount+=1 
+        else:
+            recoadTime = self.getTime(fileRow[8:10],fileRow[10:12])
+            recoadDate = self.getDate(fileRow[0:4],fileRow[4:6],fileRow[6:8]).timetuple()
+            # 不為主管
+            if(fileRow[14:24] not in self.IgnoreCard):
+                # 是否為假日
+                if(recoadDate.tm_wday >= 5 ):
+                    # 是否 18點 前下班
+                    if(recoadTime < self.time1800):
+                        self.Recoad.append(fileRow)
+                        PassCount+=1 
+                    else:
+                        self.IgnoreRecoad.append([fileRow,0])
+
+                        isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
+                        if(not isDuplicated):
+                            self.IgnoreRecoad2excel.append([fileRow,0])
+                                
+                 # 是否 21：55 前下班
+                elif (recoadTime < self.time2155):
+                    self.Recoad.append(fileRow)
+                    PassCount+=1 
+                else:
+                    self.IgnoreRecoad.append([fileRow,1])
+                    
+                    isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
+                    if(not isDuplicated):
+                        self.IgnoreRecoad2excel.append([fileRow,1])
+            # 主管
+            elif(fileRow[14:24] in self.IgnoreCard):
+                # 是否在 7點 間 18點 打卡
+                if(recoadTime>self.time0700 and recoadTime < self.time1800):
+                    self.Recoad.append(fileRow)
+                    PassCount+=1 
+                else:
+                    self.IgnoreRecoad.append([fileRow,2])
+
+                    isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
+                    if(not isDuplicated):
+                        if(recoadTime<self.time0700):
+                            fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
+                        elif(recoadTime > self.time1800):
+                            fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
+                        self.IgnoreRecoad2excel.append([fileRow,2])
+        return PassCount
+
+    # 剔除當天重複人員打卡資料
+    # return Status 是否有重複
+    def removeDuplicatedRecord(self , IgnoreRecoad2excel , fileRow):
+        Status = False
+        Two_Hours = 3600*2
+        for d in IgnoreRecoad2excel:
+            if(d[0][14:24] == fileRow[14:24] and d[0][0:8] == fileRow[0:8]):
+                date1 = self.getTime(d[0][8:10],d[0][10:12])
+                date2 = self.getTime(fileRow[8:10],fileRow[10:12])
+                if(abs((date1 -date2).total_seconds()) < Two_Hours):
+                    Status=True
+        return Status
+
+    # 儲存點名後的txt檔
+    # return new_file_name 檔名
+    def savePorcessedRecord(self):
+        # 儲存檔案
+        new_file_path=os.path.split(self.file_path)
+        new_file_dir=''
+        new_file_name= os.path.splitext(new_file_path[1])[0]
+        if(self.save_path != ""):
+            if(os.path.isdir(self.save_path)):
+                self.Label_Msg = ''
+                new_file_dir = self.save_path+'/'
+            else:
+                self.Label_Msg += '儲存路徑有誤\n'
+    
+        file = open(new_file_dir + self.getTodayString() + '.txt','w')
+        for Employee in self.Recoad:
+            file.write(Employee)
+        return new_file_name
+
+    # 儲存過濾後txt檔
+    def saveIgnoreRecord(self , new_file_name):
+        workbook = xlsxwriter.Workbook('Ignore/'+ new_file_name + '_Ignore' + '.xlsx')
+        worksheet = workbook.add_worksheet()
+        worksheet.set_column(0,2, 20)
+        format = workbook.add_format({'font_color': 'red',"align":"center" ,"num_format": "@"})
+        Row = 0
+        worksheet.write(Row, 0, u"工號", format)
+        worksheet.write(Row, 1, u"刷卡日期", format)
+        worksheet.write(Row, 2, u"刷卡時間", format)
+        
+        for IgnoreRecoad2excel in self.IgnoreRecoad2excel:
+            IgnoreData = self.processIgnore2xlsx(IgnoreRecoad2excel[0])
+            Row += 1
+            if(IgnoreRecoad2excel[1] < 2):
+                format = workbook.add_format({"align":"center" ,"num_format": "@",'bg_color': 'yellow'})
+            else:
+                format = workbook.add_format({"align":"center" ,"num_format": "@"})
+            worksheet.write(Row, 0, IgnoreData[0], format)
+            worksheet.write(Row, 1, IgnoreData[1], format)
+            worksheet.write(Row, 2, IgnoreData[2], format)
+            
+        workbook.close() 
+
+    # 儲存過濾後excel檔
+    def saveIgnoreRecord2xlsx(self , new_file_name):
+        file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
+        for IgnoreRecoad in self.IgnoreRecoad:
+            file.write(self.processIgnore(IgnoreRecoad[0]) +"  "+self.IgnoreMsg[IgnoreRecoad[1]]+"\n")
     
     def getDate(self , y , m , d ):
         return datetime.datetime.strptime( str(y)+'-'+str(m)+'-'+str(d) , "%Y-%m-%d")
