@@ -24,7 +24,7 @@ class Windows:
         self.IgnoreRecoad2excel = []# 已處理刪除紀錄(補刷卡)
         self.IgnoreRecoad2excel_2 = []# 已處理刪除紀錄(補刷卡)處理後
         self.Label_Msg = ""
-        self.IgnoreMsg = ["假日超時" ,"平日超時" ,"主管平日超時","主管假日超時","查無資料(無排班)" ]
+        self.IgnoreMsg = ["假日超時" ,"平日超時","主管假日超時","主管平日超時","查無資料(無排班)" ]
         # 搜尋員工卡號
         self.EmployeeCard = EmployeeCard.EmployeeCard()
         # 設定載入
@@ -197,21 +197,21 @@ class Windows:
                         self.Recoad.append(fileRow)
                         PassCount+=1 
                     else:
-                        self.IgnoreRecoad.append([fileRow,3])
+                        self.IgnoreRecoad.append([fileRow,2])
 
                         isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
                         if(not isDuplicated):
                             if(recoadTime<self.time0700):
                                 fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel.append([fileRow,3])
+                                self.IgnoreRecoad2excel.append([fileRow,2])
                                 fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel_2.append([fileRow,3])
+                                self.IgnoreRecoad2excel_2.append([fileRow,2])
 
                             elif(recoadTime > self.time1800):
                                 fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel.append([fileRow,3])
+                                self.IgnoreRecoad2excel.append([fileRow,2])
                                 fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel_2.append([fileRow,3])
+                                self.IgnoreRecoad2excel_2.append([fileRow,2])
                 else:
                     # 是否在 7:30 及 18點 打卡
                     if(recoadTime>self.time0700 and recoadTime < self.time1800):
@@ -224,14 +224,14 @@ class Windows:
                         if(not isDuplicated):
                             if(recoadTime<self.time0700):
                                 fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel.append([fileRow,2])
+                                self.IgnoreRecoad2excel.append([fileRow,3])
                                 fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel_2.append([fileRow,2])
+                                self.IgnoreRecoad2excel_2.append([fileRow,3])
                             elif(recoadTime > self.time1800):
                                 fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel.append([fileRow,2])
+                                self.IgnoreRecoad2excel.append([fileRow,3])
                                 fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel_2.append([fileRow,2])
+                                self.IgnoreRecoad2excel_2.append([fileRow,3])
 
                     
         return PassCount
