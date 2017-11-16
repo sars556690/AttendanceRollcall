@@ -98,6 +98,7 @@ class Windows:
             self.Recoad = []
             self.IgnoreRecoad =[]
             self.IgnoreRecoad2excel = []
+            self.IgnoreRecoad2excel_2 = []
             self.Label_Msg = ''
             file = open(self.file_path,'r+')
             
