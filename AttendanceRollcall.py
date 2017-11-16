@@ -156,22 +156,14 @@ class Windows:
                         PassCount+=1 
                     else:
                         self.IgnoreRecoad.append([fileRow,0])
-
-                        isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
-                        if(not isDuplicated):
-                            self.IgnoreRecoad2excel.append([fileRow,0])
-                            self.IgnoreRecoad2excel_2.append([fileRow,0])
+                        self.addintoIgnoreRecord(False ,recoadTime,fileRow ,0)
                  # 是否 21：55 前下班
                 elif (recoadTime < self.time2155):
                     self.Recoad.append(fileRow)
                     PassCount+=1 
                 else:
                     self.IgnoreRecoad.append([fileRow,1])
-                    
-                    isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
-                    if(not isDuplicated):
-                        self.IgnoreRecoad2excel.append([fileRow,1])
-                        self.IgnoreRecoad2excel_2.append([fileRow,1])
+                    self.addintoIgnoreRecord(False ,recoadTime,fileRow ,1)
             # 主管
             elif(fileRow[14:24] in self.IgnoreCard):
                 # 是否為假日
@@ -182,17 +174,7 @@ class Windows:
                         PassCount+=1 
                     else:
                         self.IgnoreRecoad.append([fileRow,2])
-    
-                        isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
-                        if(not isDuplicated):
-                            if(recoadTime<self.time0700):
-                                self.IgnoreRecoad2excel.append([fileRow,2])
-                                fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel_2.append([fileRow,2])
-                            elif(recoadTime > self.time1800):
-                                self.IgnoreRecoad2excel.append([fileRow,2])
-                                fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel_2.append([fileRow,2])
+                        self.addintoIgnoreRecord(True ,recoadTime,fileRow ,2)
                 else:
                     # 是否在 7點 間 18點 打卡
                     if(recoadTime>self.time0700 and recoadTime < self.time1800):
@@ -200,17 +182,7 @@ class Windows:
                         PassCount+=1 
                     else:
                         self.IgnoreRecoad.append([fileRow,3])
-    
-                        isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
-                        if(not isDuplicated):
-                            if(recoadTime<self.time0700):
-                                self.IgnoreRecoad2excel.append([fileRow,3])
-                                fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel_2.append([fileRow,3])
-                            elif(recoadTime > self.time1800):
-                                self.IgnoreRecoad2excel.append([fileRow,3])
-                                fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
-                                self.IgnoreRecoad2excel_2.append([fileRow,3])
+                        self.addintoIgnoreRecord(True ,recoadTime,fileRow ,3)
         return PassCount
 
     # 剔除當天重複人員打卡資料
@@ -225,6 +197,24 @@ class Windows:
                 if(abs((date1 -date2).total_seconds()) < Two_Hours):
                     Status=True
         return Status
+
+    # 加入IgnoreRecord 及 excel 的 List
+    def addintoIgnoreRecord(self , isBoss , recoadTime , fileRow ,StatusCode):
+        isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
+        if(not isDuplicated):
+            if(isBoss):
+                if(recoadTime<self.time0700):
+                    self.IgnoreRecoad2excel.append([fileRow,StatusCode])
+                    fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
+                    self.IgnoreRecoad2excel_2.append([fileRow,StatusCode])
+                elif(recoadTime > self.time1800):
+                    self.IgnoreRecoad2excel.append([fileRow,StatusCode])
+                    fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
+                    self.IgnoreRecoad2excel_2.append([fileRow,StatusCode])
+            else:
+                self.IgnoreRecoad2excel.append([fileRow,StatusCode])
+                self.IgnoreRecoad2excel_2.append([fileRow,StatusCode])
+
 
     # 儲存點名後的txt檔
     # return new_file_name 檔名
