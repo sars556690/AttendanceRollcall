@@ -24,7 +24,7 @@ class Windows:
         self.IgnoreRecoad2excel = []# 已處理刪除紀錄(補刷卡)
         self.IgnoreRecoad2excel_2 = []# 已處理刪除紀錄(補刷卡)處理後
         self.Label_Msg = ""
-        self.IgnoreMsg = ["假日超時" ,"平日超時" ,"主管超時"]
+        self.IgnoreMsg = ["假日超時" ,"平日超時" ,"主管假日超時","主管平日超時","查無資料(無排班)" ]
         # 搜尋員工卡號
         self.EmployeeCard = EmployeeCard.EmployeeCard()
         # 設定載入
@@ -119,11 +119,11 @@ class Windows:
                     os.makedirs('Ignore/')
 
                 if(self.chkbtn_value_removed_excel.get()):
-                    # 儲存過濾後txt檔
+                    # 儲存過濾後excel檔
                     self.saveIgnoreRecord2xlsx(new_file_name)
 
                 if(self.chkbtn_value_removed_text.get()):
-                    # 儲存過濾後excel檔
+                    # 儲存過濾後txt檔
                     self.saveIgnoreRecord(new_file_name)
 
             self.Label_Msg+="完成，已移去"+str(hasRemoved)+"項紀錄"
@@ -174,25 +174,47 @@ class Windows:
                         self.IgnoreRecoad2excel_2.append([fileRow,1])
             # 主管
             elif(fileRow[14:24] in self.IgnoreCard):
-                # 是否在 7點 間 18點 打卡
-                if(recoadTime>self.time0700 and recoadTime < self.time1800):
-                    self.Recoad.append(fileRow)
-                    PassCount+=1 
+                # 是否為假日
+                if(recoadDate.tm_wday >= 5 ):
+                    # 是否在 7點 間 18點 打卡
+                    if(recoadTime>self.time0700 and recoadTime < self.time1800):
+                        self.Recoad.append(fileRow)
+                        PassCount+=1 
+                    else:
+                        self.IgnoreRecoad.append([fileRow,2])
+    
+                        isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
+                        if(not isDuplicated):
+                            if(recoadTime<self.time0700):
+                                fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel.append([fileRow,2])
+                                fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel_2.append([fileRow,2])
+                            elif(recoadTime > self.time1800):
+                                fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel.append([fileRow,2])
+                                fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel_2.append([fileRow,2])
                 else:
-                    self.IgnoreRecoad.append([fileRow,2])
-
-                    isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
-                    if(not isDuplicated):
-                        if(recoadTime<self.time0700):
-                            fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
-                            self.IgnoreRecoad2excel.append([fileRow,2])
-                            fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
-                            self.IgnoreRecoad2excel_2.append([fileRow,2])
-                        elif(recoadTime > self.time1800):
-                            fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
-                            self.IgnoreRecoad2excel.append([fileRow,2])
-                            fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
-                            self.IgnoreRecoad2excel_2.append([fileRow,2])
+                    # 是否在 7點 間 18點 打卡
+                    if(recoadTime>self.time0700 and recoadTime < self.time1800):
+                        self.Recoad.append(fileRow)
+                        PassCount+=1 
+                    else:
+                        self.IgnoreRecoad.append([fileRow,3])
+    
+                        isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
+                        if(not isDuplicated):
+                            if(recoadTime<self.time0700):
+                                fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel.append([fileRow,3])
+                                fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel_2.append([fileRow,3])
+                            elif(recoadTime > self.time1800):
+                                fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel.append([fileRow,3])
+                                fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
+                                self.IgnoreRecoad2excel_2.append([fileRow,3])
         return PassCount
 
     # 剔除當天重複人員打卡資料
@@ -229,6 +251,12 @@ class Windows:
 
     # 儲存過濾後txt檔
     def saveIgnoreRecord(self , new_file_name):
+        file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
+        for IgnoreRecoad in self.IgnoreRecoad:
+            file.write(self.processIgnore(IgnoreRecoad[0]) +"  "+self.IgnoreMsg[IgnoreRecoad[1]]+"\n")
+
+    # 儲存過濾後excel檔
+    def saveIgnoreRecord2xlsx(self , new_file_name):
         workbook = xlsxwriter.Workbook('Ignore/'+ new_file_name + '_Ignore' + '.xlsx')
         worksheet = workbook.add_worksheet()
         worksheet.set_column(0,2, 20)
@@ -238,10 +266,10 @@ class Windows:
         worksheet.write(Row, 1, u"刷卡日期", format)
         worksheet.write(Row, 2, u"刷卡時間", format)
         
-        for IgnoreRecoad2excel in self.IgnoreRecoad2excel:
+        for IgnoreRecoad2excel in self.IgnoreRecoad2excel_2:
             IgnoreData = self.processIgnore2xlsx(IgnoreRecoad2excel[0])
             Row += 1
-            if(IgnoreRecoad2excel[1] < 2):
+            if(IgnoreRecoad2excel[1] < 2 or IgnoreRecoad2excel[1]==4):
                 format = workbook.add_format({"align":"center" ,"num_format": "@",'bg_color': 'yellow'})
             else:
                 format = workbook.add_format({"align":"center" ,"num_format": "@"})
@@ -250,12 +278,6 @@ class Windows:
             worksheet.write(Row, 2, IgnoreData[2], format)
             
         workbook.close() 
-
-    # 儲存過濾後excel檔
-    def saveIgnoreRecord2xlsx(self , new_file_name):
-        file = open('Ignore/' + new_file_name+ '_Ignore.txt','w')
-        for IgnoreRecoad in self.IgnoreRecoad:
-            file.write(self.processIgnore(IgnoreRecoad[0]) +"  "+self.IgnoreMsg[IgnoreRecoad[1]]+"\n")
     
     def getDate(self , y , m , d ):
         return datetime.datetime.strptime( str(y)+'-'+str(m)+'-'+str(d) , "%Y-%m-%d")
