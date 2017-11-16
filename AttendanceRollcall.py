@@ -169,7 +169,7 @@ class Windows:
                 # 是否為假日
                 if(recoadDate.tm_wday >= 5 ):
                     # 是否在 7點 間 18點 打卡
-                    if(recoadTime>self.time0700 and recoadTime < self.time1800):
+                    if(recoadTime >= self.time0700 and recoadTime <= self.time1800):
                         self.Recoad.append(fileRow)
                         PassCount+=1 
                     else:
@@ -177,7 +177,7 @@ class Windows:
                         self.addintoIgnoreRecord(True ,recoadTime,fileRow ,2)
                 else:
                     # 是否在 7點 間 18點 打卡
-                    if(recoadTime>self.time0700 and recoadTime < self.time1800):
+                    if(recoadTime >= self.time0700 and recoadTime <= self.time1800):
                         self.Recoad.append(fileRow)
                         PassCount+=1 
                     else:
@@ -203,7 +203,7 @@ class Windows:
         isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
         if(not isDuplicated):
             if(isBoss):
-                if(recoadTime<self.time0700):
+                if(recoadTime < self.time0700):
                     self.IgnoreRecoad2excel.append([fileRow,StatusCode])
                     fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
                     self.IgnoreRecoad2excel_2.append([fileRow,StatusCode])
