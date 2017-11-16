@@ -26,10 +26,11 @@ class EmployeeCard:
             # row = self.cursor.fetchone()
             for i in self.cursor:    
                 if i:
+                    # 工號，姓名，卡號
                     EmployeeList.append([i[0] , i[1] , i[2]])
             return EmployeeList
 
-    def searchEmployeeHoliday(self , EmployeeCode=None , date=None ):
+    def searchEmployeeHoliday(self , CardNo=None , date=None ):
         if(self.cnxn != None):
             datetime.datetime
             sql = "SELECT AttendanceEmpRank.[Date]\
@@ -42,24 +43,30 @@ class EmployeeCard:
                     ON Employee.EmployeeId = AttendanceEmpRank.EmployeeId\
                     LEFT OUTER JOIN dbo.Card AS Card \
                     ON Employee.EmployeeId = Card.EmployeeId "
-            if(EmployeeCode != None or date != None):
+            if(CardNo != None or date != None):
                 sql +=" where "
     
-            if(EmployeeCode != None):
-                sql += "Employee.Code ='"+ str(EmployeeCode) +"'"
+            if(CardNo != None):
+                sql += "CardNo ='"+ str(CardNo) +"'"
     
             if(date !=None):
-                if(EmployeeCode != None):
+                if(CardNo != None):
                     sql +=" and "
                 sql += "AttendanceEmpRank.Date = '"+ str(date) +"'"
 
             self.cursor.execute(sql)
             employee = self.cursor.fetchall()
-            if(len(employee)>0):
-                return employee[0][1] != "DefaultHolidayType001"
-            else:
-                return False
 
+            # 0 假日
+            # 1 平日
+            # 2 無資料
+            if(employee):
+                if(employee[0][1] != "DefaultHolidayType001"):
+                    return 0
+                else:
+                    return 1
+            else:
+                return 2
 
 # a=EmployeeCard()
 # b = a.searchEmployeeHoliday( EmployeeCode = "00336" ,date = datetime.datetime(2017,10,10) )
