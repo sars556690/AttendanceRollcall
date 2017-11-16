@@ -186,12 +186,10 @@ class Windows:
                         isDuplicated = self.removeDuplicatedRecord(self.IgnoreRecoad2excel , fileRow)
                         if(not isDuplicated):
                             if(recoadTime<self.time0700):
-                                fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
                                 self.IgnoreRecoad2excel.append([fileRow,2])
                                 fileRow = fileRow[0:8] + "07" + fileRow[10:14]+fileRow[14:]
                                 self.IgnoreRecoad2excel_2.append([fileRow,2])
                             elif(recoadTime > self.time1800):
-                                fileRow = fileRow[0:8] + fileRow[8:10] + fileRow[10:14]+fileRow[14:]
                                 self.IgnoreRecoad2excel.append([fileRow,2])
                                 fileRow = fileRow[0:8] + "17" + fileRow[10:14]+fileRow[14:]
                                 self.IgnoreRecoad2excel_2.append([fileRow,2])
